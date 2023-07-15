@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes: 
+      - db:/var/lib/postgresql/data
+    networks:
+      - persistantstore
+
+  persistantstore:
+    build: ./PersistantStore
+    ports:
+      - 65124:65124
+    restart: always
+    environment:
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_PORT: "5432"
+    depends_on:
+      - db
+    networks:
+      - persistantstore
+
+  repository:
+    build: 
+      context: ./repository
+      dockerfile: ./Repository/Dockerfile
+    ports:
+      - 65123:65123
+    restart: always
+    environment:
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_PORT: "5432"
+    depends_on:
+      - db
+    networks:
+      - repository
+      - commons
+      - persistantstore
+
+  authorization:
+    build: ./Authorization
+    ports:
+      - 65420:65420
+    restart: always
+    environment:
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_PORT: "5432"
+    depends_on:
+      - db
+    networks:
+      - repository
+      - commons
+      - persistantstore
+  
+  publisher:
+    build: ./Publisher
+    ports:
+      - 65110:65110
+    restart: always
+    environment:
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_PORT: "5432"
+    depends_on:
+      - db
+      - persistantstore
+      - authorization
+      - repository
+    networks:
+      - publisher
+      - commons
+      - repository
+
+  subscriber:
+    build: ./Subscriber
+    ports:
+      - 65111:65111
+    restart: always
+    environment:
+      DB_USERNAME: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_PORT: "5432"
+    depends_on:
+      - db
+      - persistantstore
+      - authorization
+      - repository
+    networks:
+      - subscriber
+      - commons
+      - repository
+
+volumes:
+  db:
+    driver: local
