@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  publisher:
+    container_name: publisher
+    image: publisher
+    build:
+      context: .
+      target: production-env
+    ports:
+      - 65110:65110
